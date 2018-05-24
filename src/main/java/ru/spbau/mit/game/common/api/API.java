@@ -26,7 +26,7 @@ public class API {
         try (Socket socket = new Socket(host, port)) {
             final HttpRequest httpRequest = new HttpRequest(singletonMap("Host", host), request);
             httpRequest.send(socket);
-            final HttpResponse response = HttpResponse.accept(socket, Type.GET_ROOMS);
+            final HttpResponse response = HttpResponse.accept(socket, request.getDialogType());
             return response.getResponse();
         }
     }

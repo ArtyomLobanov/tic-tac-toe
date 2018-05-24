@@ -5,6 +5,7 @@ import ru.spbau.mit.game.common.api.requests.Request;
 
 import java.io.*;
 import java.net.Socket;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -21,7 +22,7 @@ public class HttpRequest {
 
     public void send(Socket socket) throws IOException {
         final OutputStream outputStream = socket.getOutputStream();
-        outputStream.write(buildHttp().getBytes("UTF-16"));
+        outputStream.write(buildHttp().getBytes("UTF-8"));
         outputStream.flush();
     }
 
@@ -34,15 +35,14 @@ public class HttpRequest {
     }
 
     public static HttpRequest accept(Socket socket) throws IOException {
-        final InputStream inputStream = socket.getInputStream();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, "UTF-16"));
-        final String[] titles = reader.readLine().split("\\s");
+        final Reader reader = new InputStreamReader(socket.getInputStream(), "UTF-8");
+        final String[] titles = Utils.readLine(reader).split("\\s");
         final HttpRequestType httpType = HttpRequestType.valueOf(titles[0]);
         final API.Type type = API.findType(httpType, titles[1]);
 
         final HashMap<String, String> header = new HashMap<>();
         while (true) {
-            final String line = reader.readLine().trim();
+            final String line = Utils.readLine(reader).trim();
             if (line.isEmpty()) {
                 break;
             }
@@ -52,7 +52,7 @@ public class HttpRequest {
             header.put(headerName, headerValue);
         }
 
-        final Request request = gson.fromJson(reader.readLine(), type.requestClass);
+        final Request request = gson.fromJson(Utils.readLine(reader), type.requestClass);
         return new HttpRequest(header, request);
     }
 
@@ -65,6 +65,7 @@ public class HttpRequest {
         header.forEach((key, value) -> builder.append(key).append(": ").append(value).append("\n"));
         builder.append("\n");
         builder.append(gson.toJson(request));
+        builder.append("\n");
         return builder.toString();
     }
 }

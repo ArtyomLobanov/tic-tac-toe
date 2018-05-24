@@ -5,6 +5,7 @@ import ru.spbau.mit.game.common.api.response.Response;
 
 import java.io.*;
 import java.net.Socket;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -24,9 +25,12 @@ public class HttpResponse {
     }
 
     public void send(Socket socket) throws IOException {
+        System.out.println("start sending");
         final OutputStream outputStream = socket.getOutputStream();
-        outputStream.write(buildHttp().getBytes("UTF-16"));
+        outputStream.write(buildHttp().getBytes("UTF-8"));
+        System.out.println("flush sending");
         outputStream.flush();
+        System.out.println("stop sending");
     }
 
     public Response getResponse() {
@@ -46,15 +50,14 @@ public class HttpResponse {
     }
 
     public static HttpResponse accept(Socket socket, API.Type type) throws IOException {
-        final InputStream inputStream = socket.getInputStream();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, "UTF-16"));
-        final String[] titles = reader.readLine().split("\\s");
+        final Reader reader = new InputStreamReader(socket.getInputStream(), "UTF-8");
+        final String[] titles = Utils.readLine(reader).split("\\s");
         final int resultCode = Integer.parseInt(titles[1]);
         final String resultDescription = titles.length == 2 ? "" : titles[2];
 
         final HashMap<String, String> header = new HashMap<>();
         while (true) {
-            final String line = reader.readLine().trim();
+            final String line = Utils.readLine(reader).trim();
             if (line.isEmpty()) {
                 break;
             }
@@ -64,7 +67,7 @@ public class HttpResponse {
             header.put(headerName, headerValue);
         }
 
-        final Response response = gson.fromJson(reader.readLine(), type.responseClass);
+        final Response response = gson.fromJson(Utils.readLine(reader), type.responseClass);
         return new HttpResponse(resultCode, resultDescription, header, response);
     }
 
@@ -79,6 +82,7 @@ public class HttpResponse {
         header.forEach((key, value) -> builder.append(key).append(": ").append(value).append("\n"));
         builder.append("\n");
         builder.append(gson.toJson(response));
+        builder.append("\n");
         return builder.toString();
     }
 }
