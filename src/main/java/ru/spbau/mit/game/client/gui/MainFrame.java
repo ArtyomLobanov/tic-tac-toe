@@ -2,7 +2,11 @@ package ru.spbau.mit.game.client.gui;
 
 import ru.spbau.mit.game.client.Game;
 import ru.spbau.mit.game.client.ImagePack;
+import ru.spbau.mit.game.client.User;
+import ru.spbau.mit.game.client.gui.Dialogs.GameSettings;
+import ru.spbau.mit.game.client.gui.Dialogs.RoomSettings;
 import ru.spbau.mit.game.common.api.API;
+import ru.spbau.mit.game.common.api.ServerAddress;
 import ru.spbau.mit.game.common.api.requests.*;
 import ru.spbau.mit.game.common.api.response.*;
 import ru.spbau.mit.game.common.api.units.Player;
@@ -15,17 +19,15 @@ import java.util.Optional;
 
 import static javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER;
 import static javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED;
+import static ru.spbau.mit.game.client.Constants.BOLD_FONT;
+import static ru.spbau.mit.game.client.Constants.DEFAULT_FONT;
 
 public class MainFrame extends JFrame {
-    private static final Font DEFAULT_FONT = new Font("Verdana", Font.BOLD, 14);
-
-    private final Player player;
-    private final long passwordHash;
-    private final String host;
-    private final int port;
+    private final User user;
+    private final ServerAddress address;
     private final JPanel listPanel;
 
-    private MainFrame(String host, int port, Player player, long passwordHash) {
+    private MainFrame(ServerAddress address, User user) {
         super("Tic-Tac-Toe game");
         final Dimension monitor = Toolkit.getDefaultToolkit().getScreenSize();
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
@@ -33,10 +35,8 @@ public class MainFrame extends JFrame {
         setSize(new Dimension(monitor.width / 2, monitor.height / 2));
         setResizable(false);
         setLocationRelativeTo(null);
-        this.player = player;
-        this.passwordHash = passwordHash;
-        this.host = host;
-        this.port = port;
+        this.user = user;
+        this.address = address;
         listPanel = new JPanel();
         final JPanel wrapper = new JPanel(new BorderLayout());
         wrapper.add(listPanel, BorderLayout.NORTH);
@@ -48,7 +48,7 @@ public class MainFrame extends JFrame {
 
     private JPanel createFooter() {
         final JPanel footer = new JPanel(new BorderLayout());
-        final JLabel nameLabel = new JLabel("Welcome, " + player.name + "!", SwingConstants.CENTER);
+        final JLabel nameLabel = new JLabel("Welcome, " + user.player.name + "!", SwingConstants.CENTER);
         nameLabel.setFont(DEFAULT_FONT);
         final JPanel buttons = new JPanel(new GridLayout(1, 2, 5, 0));
         final JButton refresh = new JButton("Refresh");
@@ -57,7 +57,7 @@ public class MainFrame extends JFrame {
         buttons.add(refresh);
         final JButton create = new JButton("Create");
         create.setFont(DEFAULT_FONT);
-        create.addActionListener(e -> refreshRooms());
+        create.addActionListener(e -> createRoom());
         buttons.add(create);
         footer.add(nameLabel, BorderLayout.CENTER);
         footer.add(buttons, BorderLayout.EAST);
@@ -67,15 +67,15 @@ public class MainFrame extends JFrame {
     private JPanel createHeader() {
         final JPanel header = new JPanel(new GridLayout(1, 5, 5, 0));
         final JLabel nameLabel = new JLabel("Room name", SwingConstants.CENTER);
-        nameLabel.setFont(DEFAULT_FONT);
+        nameLabel.setFont(BOLD_FONT);
         final JLabel hostLabel = new JLabel("Host name", SwingConstants.CENTER);
-        hostLabel.setFont(DEFAULT_FONT);
+        hostLabel.setFont(BOLD_FONT);
         final JLabel guestLabel = new JLabel("Guest name", SwingConstants.CENTER);
-        guestLabel.setFont(DEFAULT_FONT);
-        final JLabel sizeLabel = new JLabel("Field size", SwingConstants.CENTER);
-        sizeLabel.setFont(DEFAULT_FONT);
+        guestLabel.setFont(BOLD_FONT);
+        final JLabel sizeLabel = new JLabel("Game type", SwingConstants.CENTER);
+        sizeLabel.setFont(BOLD_FONT);
         final JLabel actionLabel = new JLabel("Action", SwingConstants.CENTER);
-        actionLabel.setFont(DEFAULT_FONT);
+        actionLabel.setFont(BOLD_FONT);
         header.add(nameLabel);
         header.add(hostLabel);
         header.add(guestLabel);
@@ -93,21 +93,20 @@ public class MainFrame extends JFrame {
         final JLabel guestLabel = new JLabel(Optional.ofNullable(room.guest)
                 .map(p -> p.name).orElse("-"), SwingConstants.CENTER);
         guestLabel.setFont(DEFAULT_FONT);
-        final JLabel sizeLabel = new JLabel(Integer.toString(room.size), SwingConstants.CENTER);
+        final JLabel sizeLabel = new JLabel(room.type.typeName, SwingConstants.CENTER);
         sizeLabel.setFont(DEFAULT_FONT);
         panel.add(nameLabel);
         panel.add(hostLabel);
         panel.add(guestLabel);
         panel.add(sizeLabel);
         final JButton action;
-        if (room.host.id == player.id) {
+        if (room.host.id == user.player.id && room.guest == null) {
             action = new JButton("Remove");
-            action.setEnabled(room.guest == null);
             action.addActionListener(e -> {
                 try {
                     final DeleteRoomResponse response = (DeleteRoomResponse) API.request(
-                            host, port,
-                            new DeleteRoomRequest(room.id, passwordHash));
+                            address,
+                            new DeleteRoomRequest(room.id, user.passwordHash));
                     if (!response.success) {
                         showErrorMessage("Can't remove room.");
                     }
@@ -121,8 +120,8 @@ public class MainFrame extends JFrame {
             action.addActionListener(e -> {
                 try {
                     final JoinRoomResponse response = (JoinRoomResponse) API.request(
-                            host, port,
-                            new JoinRoomRequest(room.id, player.id, passwordHash));
+                            address,
+                            new JoinRoomRequest(room.id,user.player.id, user.passwordHash));
                     if (response.success) {
                         openGame(room.id);
                     } else {
@@ -134,7 +133,7 @@ public class MainFrame extends JFrame {
                 }
             });
         } else {
-            action = new JButton("Observe");
+            action = new JButton("Open");
             action.addActionListener(e -> {
                 try {
                     openGame(room.id);
@@ -152,19 +151,38 @@ public class MainFrame extends JFrame {
 
     private void openGame(long roomId) throws IOException {
         final GetRoomInfoResponse roomResponse = (GetRoomInfoResponse) API.request(
-                host, port,
+                address,
                 new GetRoomInfoRequest(roomId));
         final Room room = roomResponse.room;
-        final Game game = new Game(room, player, passwordHash, room.size, host, port);
-        final GameFrame frame = new GameFrame(game, ImagePack.loadDefaultPack(50), e -> {
-        });
+        final Game game = new Game(room, user, address);
+        //todo icon sizes
+        final GameFrame frame = new GameFrame(game, ImagePack.loadDefaultPack(50), e -> {});
         frame.setVisible(true);
+    }
+
+    private void createRoom() {
+        final Optional<RoomSettings> result = Dialogs.createRoom();
+        if (!result.isPresent()) {
+            return;
+        }
+        final RoomSettings settings = result.get();
+        try {
+            final CreateRoomResponse response = (CreateRoomResponse) API.request(
+                    address,
+                    new CreateRoomRequest(settings.name, settings.type, user.player, user.passwordHash));
+            if (!response.success) {
+                showErrorMessage("Unable to create room!");
+            }
+            refreshRooms();
+        } catch (IOException ignored) {
+            connectionLost();
+        }
     }
 
     private void refreshRooms() {
         try {
             final GetRoomsListResponse roomsList = (GetRoomsListResponse) API.request(
-                    host, port,
+                    address,
                     new GetRoomsListRequest());
             listPanel.removeAll();
             listPanel.setLayout(new GridLayout(roomsList.rooms.size() + 1, 1, 0, 10));
@@ -182,24 +200,22 @@ public class MainFrame extends JFrame {
 
     private void connectionLost() {
         showErrorMessage("Connection lost!");
-        System.exit(0);
+        setVisible(false);
+        dispose();
     }
 
     public static void main(String[] args) throws IOException {
-        if (args.length != 4) {
-            System.out.println("Usage: host port name password");
+        final Optional<GameSettings> result = Dialogs.createUser();
+        if (!result.isPresent()) {
             return;
         }
-        final String host = args[0];
-        final int port = Integer.parseInt(args[1]);
-        final String name = args[2];
-        final String password = args[3];
-        final long passwordHash = password.hashCode() | ((long) (name.hashCode()) << 32);
-        final RegisterPlayerResponse response = (RegisterPlayerResponse) API.request(host, port,
-                new RegisterPlayerRequest(name, passwordHash));
-        final Player player = new Player(name, response.id);
+        final GameSettings settings = result.get();
+        final RegisterPlayerResponse response = (RegisterPlayerResponse) API.request(settings.address,
+                new RegisterPlayerRequest(settings.name, User.hash(settings.password)));
+        final Player player = new Player(settings.name, response.id);
+        final User user = new User(player, settings.password);
         SwingUtilities.invokeLater(() -> {
-            final MainFrame game = new MainFrame(host, port, player, passwordHash);
+            final MainFrame game = new MainFrame(settings.address, user);
             game.setVisible(true);
         });
     }

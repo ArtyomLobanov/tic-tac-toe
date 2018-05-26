@@ -7,6 +7,7 @@ import ru.spbau.mit.game.common.api.requests.RegisterPlayerRequest;
 import ru.spbau.mit.game.common.api.requests.UpdateFieldRequest;
 import ru.spbau.mit.game.common.api.response.*;
 import ru.spbau.mit.game.common.api.units.Field;
+import ru.spbau.mit.game.common.api.units.GameType;
 import ru.spbau.mit.game.common.api.units.Player;
 import ru.spbau.mit.game.common.api.units.Room;
 
@@ -17,7 +18,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class Server {
+public class TestServer {
     public static void main(String[] args) throws IOException {
         ServerSocket socket = new ServerSocket(4567);
         Field.Cell[][] cells = new Field.Cell[15][15];
@@ -35,7 +36,7 @@ public class Server {
             } else if (request.getRequest().getDialogType() == API.Type.GET_ROOM_INFO) {
                 API.send(200, "OK", input,
                         new GetRoomInfoResponse(new Room("room1", 12, new Player("p1", 1),
-                                new Player("p1", 2), 15, Room.Status.IN_PROGRESS, true))
+                                new Player("p1", 2), GameType.GOMOKU_GAME, Room.Status.IN_PROGRESS, true))
                         );
             } else if (request.getRequest().getDialogType() == API.Type.UPDATE_FIELD) {
                 odd++;
@@ -57,19 +58,19 @@ public class Server {
                 API.send(200, "OK", input,
                         new GetRoomsListResponse(Arrays.asList(
                                 new Room("name", 23, new Player("pla1", 12),
-                                null, 3, Room.Status.WAIT_GUEST, false),
+                                null, GameType.CLASSIC_GAME, Room.Status.WAIT_GUEST, false),
                                 new Room("best room ever", 235, new Player("pla1", 12),
-                                        null, 15, Room.Status.WAIT_GUEST, false),
+                                        null, GameType.CLASSIC_GAME, Room.Status.WAIT_GUEST, false),
                                 new Room("best room ever", 235, new Player("pla1", 12),
-                                        null, 15, Room.Status.WAIT_GUEST, false),
+                                        null, GameType.CLASSIC_GAME, Room.Status.WAIT_GUEST, false),
                                 new Room("best room ever", 235, new Player("pla1", 12),
-                                        null, 15, Room.Status.WAIT_GUEST, false),
+                                        null, GameType.GOMOKU_GAME, Room.Status.WAIT_GUEST, false),
                                 new Room("best room ever", 235, new Player("pla1", 12),
-                                        null, 15, Room.Status.WAIT_GUEST, false),
+                                        null, GameType.CLASSIC_GAME, Room.Status.WAIT_GUEST, false),
                                 new Room("best room ever", 235, new Player("pla1", 12),
-                                        null, 15, Room.Status.WAIT_GUEST, false),
+                                        null, GameType.CLASSIC_GAME, Room.Status.WAIT_GUEST, false),
                                 new Room("best room ever", 235, new Player("pla1", 12),
-                                        null, 15, Room.Status.WAIT_GUEST, false)
+                                        null, GameType.CLASSIC_GAME, Room.Status.WAIT_GUEST, false)
                         )));
             }
             input.close();

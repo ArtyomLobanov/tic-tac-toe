@@ -1,27 +1,20 @@
 package ru.spbau.mit.game.client;
 
+import ru.spbau.mit.game.common.api.ServerAddress;
 import ru.spbau.mit.game.common.api.units.Field.Cell;
-import ru.spbau.mit.game.common.api.units.Player;
 import ru.spbau.mit.game.common.api.units.Room;
 
 public class Game {
     public final Room room;
-    public final Player player;
-    public final long password;
-    public final int size;
-    public final String host;
-    public final int port;
+    public final User user;
+    public final ServerAddress address;
 
-    public Game(Room room, Player player, long password, int size, String host, int port) {
+    public Game(Room room, User user, ServerAddress address) {
         this.room = room;
-        this.player = player;
-        this.password = password;
-        this.size = size;
-        this.host = host;
-        this.port = port;
+        this.user = user;
+        this.address = address;
     }
 
-    public enum GameResult {WIN, LOSE, DRAW, CONNECTION_LOST}
     public enum Role {X_PLAYER(Cell.X), O_PLAYER(Cell.O), OBSERVER(null);
         public final Cell cell;
 
