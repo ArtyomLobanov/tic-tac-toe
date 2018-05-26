@@ -3,9 +3,11 @@ package ru.spbau.mit.game.common.api;
 import com.google.gson.Gson;
 import ru.spbau.mit.game.common.api.requests.Request;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.Reader;
 import java.net.Socket;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 

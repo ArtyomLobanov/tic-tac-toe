@@ -1,7 +1,6 @@
 package ru.spbau.mit.game.common.api.response;
 
 import ru.spbau.mit.game.common.api.API;
-import ru.spbau.mit.game.common.api.units.Room;
 
 public class CreateRoomResponse implements Response {
 
