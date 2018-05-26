@@ -8,16 +8,16 @@ public class Room {
     public final long id;
     public final Player host;
     public final Player guest;
-    public final int size;
+    public final GameType type;
     public final Status status;
     public final boolean isHostStart;
 
-    public Room(String name, long id, Player host, Player guest, int size, Status status, boolean isHostStart) {
+    public Room(String name, long id, Player host, Player guest, GameType type, Status status, boolean isHostStart) {
         this.name = name;
         this.id = id;
         this.host = host;
         this.guest = guest;
-        this.size = size;
+        this.type = type;
         this.status = status;
         this.isHostStart = isHostStart;
     }

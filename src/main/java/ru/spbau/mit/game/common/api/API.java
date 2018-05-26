@@ -19,9 +19,9 @@ public class API {
         throw new RuntimeException("Unknown api call!");
     }
 
-    public static Response request(String host, int port, Request request) throws IOException {
-        try (Socket socket = new Socket(host, port)) {
-            final HttpRequest httpRequest = new HttpRequest(singletonMap("Host", host), request);
+    public static Response request(ServerAddress address, Request request) throws IOException {
+        try (Socket socket = new Socket(address.host, address.port)) {
+            final HttpRequest httpRequest = new HttpRequest(singletonMap("Host", address.host), request);
             httpRequest.send(socket);
             final HttpResponse response = HttpResponse.accept(socket, request.getDialogType());
             return response.getResponse();

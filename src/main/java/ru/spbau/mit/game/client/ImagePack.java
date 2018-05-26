@@ -70,8 +70,4 @@ public class ImagePack {
             button.setDisabledIcon(cellIcon);
         }
     }
-
-//    public int preferredSize() {
-//        return xCell.getIconHeight();
-//    }
 }

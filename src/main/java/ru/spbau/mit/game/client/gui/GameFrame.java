@@ -1,5 +1,6 @@
 package ru.spbau.mit.game.client.gui;
 
+import ru.spbau.mit.game.client.Constants;
 import ru.spbau.mit.game.client.Game;
 import ru.spbau.mit.game.client.ImagePack;
 import ru.spbau.mit.game.common.api.API;
@@ -20,10 +21,9 @@ import java.awt.*;
 import java.io.IOException;
 import java.util.function.Consumer;
 
-class GameFrame extends JFrame {
-    private static final int TIMER_DELAY = 1000;
-    private static final Font DEFAULT_FONT = new Font("Verdana", Font.BOLD, 14);
+import static ru.spbau.mit.game.client.Constants.DEFAULT_FONT;
 
+class GameFrame extends JFrame {
     private final JButton[][] buttons;
     private final JLabel currentPlayer;
     private final JLabel turnsCounter;
@@ -38,16 +38,16 @@ class GameFrame extends JFrame {
         super(game.room.name + ": " + game.room.host.name + " vs " + game.room.guest.name);
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         this.game = game;
-        if (game.room.host.id == game.player.id) {
+        if (game.room.host.id == game.user.player.id) {
             role = game.room.isHostStart ? Game.Role.X_PLAYER : Game.Role.O_PLAYER;
-        } else if (game.room.guest.id == game.player.id) {
+        } else if (game.room.guest.id == game.user.player.id) {
             role = !game.room.isHostStart ? Game.Role.X_PLAYER : Game.Role.O_PLAYER;
         } else {
             role = Game.Role.OBSERVER;
         }
         this.pack = pack;
         this.callback = callback;
-        this.timer = new Timer(TIMER_DELAY, e -> {
+        this.timer = new Timer(Constants.FIELD_UPDATE_DELAY, e -> {
             updateField();
             updateInfo();
             final Room.Status status = checkGameStatus();
@@ -56,10 +56,11 @@ class GameFrame extends JFrame {
             }
         });
 
-        final JPanel field = new JPanel(new GridLayout(game.size, game.size, 0, 0));
-        buttons = new JButton[game.size][game.size];
-        for (int i = 0; i < game.size; i++) {
-            for (int j = 0; j < game.size; j++) {
+        final int fieldSize = game.room.type.fieldSize;
+        final JPanel field = new JPanel(new GridLayout(fieldSize, fieldSize, 0, 0));
+        buttons = new JButton[fieldSize][fieldSize];
+        for (int i = 0; i < fieldSize; i++) {
+            for (int j = 0; j < fieldSize; j++) {
                 buttons[i][j] = createButton(i, j);
                 field.add(buttons[i][j]);
             }
@@ -98,10 +99,10 @@ class GameFrame extends JFrame {
         }
         try {
             final UpdateFieldResponse request = (UpdateFieldResponse) API.request(
-                    game.host, game.port,
+                    game.address,
                     new UpdateFieldRequest(
                             game.room.id,
-                            game.password,
+                            game.user.passwordHash,
                             new Field.Diff(i, j, role.cell)
                     ));
             if (request.success) {
@@ -125,7 +126,7 @@ class GameFrame extends JFrame {
     private void initField() {
         try {
             final GetFieldResponse response = (GetFieldResponse) API.request(
-                    game.host, game.port,
+                    game.address,
                     new GetFieldRequest(game.room.id));
             fieldVersion = response.field.iteration;
             final Cell[][] newCells = response.field.cells;
@@ -142,7 +143,7 @@ class GameFrame extends JFrame {
     private Room.Status checkGameStatus() {
         try {
             final GetRoomInfoResponse response = (GetRoomInfoResponse) API.request(
-                    game.host, game.port,
+                    game.address,
                     new GetRoomInfoRequest(game.room.id));
             return response.room.status;
         } catch (IOException ignored) {
@@ -160,7 +161,7 @@ class GameFrame extends JFrame {
     private void updateField() {
         try {
             final GetFieldPatchResponse response = (GetFieldPatchResponse) API.request(
-                    game.host, game.port,
+                    game.address,
                     new GetFieldPatchRequest(game.room.id, fieldVersion));
             final Field.Patch patch = response.patch;
             fieldVersion = patch.newVersion;
@@ -181,6 +182,8 @@ class GameFrame extends JFrame {
         timer.stop();
         showErrorMessage("Connection lost!");
         callback.accept(game);
+        setVisible(false);
+        dispose();
     }
 
     private void gameFinished(Room.Status status) {
@@ -193,6 +196,8 @@ class GameFrame extends JFrame {
             showInfoMessage((isHostWin ? game.room.host.name : game.room.guest.name) + " win the game!");
             callback.accept(game);
         }
+        setVisible(false);
+        dispose();
     }
 
     private boolean isOurTern() {

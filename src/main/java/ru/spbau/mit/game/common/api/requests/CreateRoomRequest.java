@@ -1,18 +1,19 @@
 package ru.spbau.mit.game.common.api.requests;
 
 import ru.spbau.mit.game.common.api.API;
+import ru.spbau.mit.game.common.api.units.GameType;
 import ru.spbau.mit.game.common.api.units.Player;
 
 public class CreateRoomRequest implements Request {
 
     public final String roomName;
-    public final int fieldSize;
+    public final GameType type;
     public final Player owner;
     public final long password;
 
-    public CreateRoomRequest(String roomName, int fieldSize, Player owner, long password) {
+    public CreateRoomRequest(String roomName, GameType type, Player owner, long password) {
         this.roomName = roomName;
-        this.fieldSize = fieldSize;
+        this.type = type;
         this.owner = owner;
         this.password = password;
     }
