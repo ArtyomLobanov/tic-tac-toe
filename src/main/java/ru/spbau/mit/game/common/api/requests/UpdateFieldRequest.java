@@ -6,16 +6,12 @@ import ru.spbau.mit.game.common.api.units.Field;
 public class UpdateFieldRequest implements Request {
     public final long roomId;
     public final long password;
-    public final int row;
-    public final int column;
-    public final Field.Cell cell;
+    public final Field.Diff diff;
 
-    public UpdateFieldRequest(long roomId, long password, int row, int column, Field.Cell cell) {
+    public UpdateFieldRequest(long roomId, long password, Field.Diff diff) {
         this.roomId = roomId;
         this.password = password;
-        this.row = row;
-        this.column = column;
-        this.cell = cell;
+        this.diff = diff;
     }
 
     @Override

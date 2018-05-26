@@ -25,12 +25,9 @@ public class HttpResponse {
     }
 
     public void send(Socket socket) throws IOException {
-        System.out.println("start sending");
         final OutputStream outputStream = socket.getOutputStream();
         outputStream.write(buildHttp().getBytes("UTF-8"));
-        System.out.println("flush sending");
         outputStream.flush();
-        System.out.println("stop sending");
     }
 
     public Response getResponse() {
@@ -66,7 +63,6 @@ public class HttpResponse {
             final String headerValue = line.substring(separatorIndex + 1).trim();
             header.put(headerName, headerValue);
         }
-
         final Response response = gson.fromJson(Utils.readLine(reader), type.responseClass);
         return new HttpResponse(resultCode, resultDescription, header, response);
     }
