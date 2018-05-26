@@ -3,14 +3,8 @@ package ru.spbau.mit.game.client.gui;
 import ru.spbau.mit.game.client.Game;
 import ru.spbau.mit.game.client.ImagePack;
 import ru.spbau.mit.game.common.api.API;
-import ru.spbau.mit.game.common.api.requests.GetRoomInfoRequest;
-import ru.spbau.mit.game.common.api.requests.GetRoomsListRequest;
-import ru.spbau.mit.game.common.api.requests.JoinRoomRequest;
-import ru.spbau.mit.game.common.api.requests.RegisterPlayerRequest;
-import ru.spbau.mit.game.common.api.response.GetRoomInfoResponse;
-import ru.spbau.mit.game.common.api.response.GetRoomsListResponse;
-import ru.spbau.mit.game.common.api.response.JoinRoomResponse;
-import ru.spbau.mit.game.common.api.response.RegisterPlayerResponse;
+import ru.spbau.mit.game.common.api.requests.*;
+import ru.spbau.mit.game.common.api.response.*;
 import ru.spbau.mit.game.common.api.units.Player;
 import ru.spbau.mit.game.common.api.units.Room;
 
@@ -18,6 +12,9 @@ import javax.swing.*;
 import java.awt.*;
 import java.io.IOException;
 import java.util.Optional;
+
+import static javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER;
+import static javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED;
 
 public class MainFrame extends JFrame {
     private static final Font DEFAULT_FONT = new Font("Verdana", Font.BOLD, 14);
@@ -30,53 +27,98 @@ public class MainFrame extends JFrame {
 
     private MainFrame(String host, int port, Player player, long passwordHash) {
         super("Tic-Tac-Toe game");
-        setMinimumSize(new Dimension(700, 200));
+        final Dimension monitor = Toolkit.getDefaultToolkit().getScreenSize();
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
+        setSize(new Dimension(monitor.width / 2, monitor.height / 2));
+        setResizable(false);
+        setLocationRelativeTo(null);
         this.player = player;
         this.passwordHash = passwordHash;
         this.host = host;
         this.port = port;
         listPanel = new JPanel();
-        listPanel.setLayout(new BoxLayout(listPanel, BoxLayout.Y_AXIS));
         final JPanel wrapper = new JPanel(new BorderLayout());
         wrapper.add(listPanel, BorderLayout.NORTH);
-        add(new JScrollPane(wrapper), BorderLayout.CENTER);
+        add(new JScrollPane(wrapper, VERTICAL_SCROLLBAR_AS_NEEDED, HORIZONTAL_SCROLLBAR_NEVER), BorderLayout.CENTER);
         add(createFooter(), BorderLayout.SOUTH);
+        add(createHeader(), BorderLayout.NORTH);
         refreshRooms();
     }
 
     private JPanel createFooter() {
         final JPanel footer = new JPanel(new BorderLayout());
-        final JLabel nameLabel = new JLabel("Your name:" + player.name);
+        final JLabel nameLabel = new JLabel("Welcome, " + player.name + "!", SwingConstants.CENTER);
         nameLabel.setFont(DEFAULT_FONT);
+        final JPanel buttons = new JPanel(new GridLayout(1, 2, 5, 0));
         final JButton refresh = new JButton("Refresh");
         refresh.setFont(DEFAULT_FONT);
         refresh.addActionListener(e -> refreshRooms());
-        footer.add(nameLabel, BorderLayout.WEST);
-        footer.add(refresh, BorderLayout.EAST);
+        buttons.add(refresh);
+        final JButton create = new JButton("Create");
+        create.setFont(DEFAULT_FONT);
+        create.addActionListener(e -> refreshRooms());
+        buttons.add(create);
+        footer.add(nameLabel, BorderLayout.CENTER);
+        footer.add(buttons, BorderLayout.EAST);
         return footer;
     }
 
-    private JPanel createRoomPanel(Room room) {
-        final JPanel panel = new JPanel(new GridLayout(1, 5, 10, 0));
-        final JLabel nameLabel = new JLabel("Room: " + room.name);
+    private JPanel createHeader() {
+        final JPanel header = new JPanel(new GridLayout(1, 5, 5, 0));
+        final JLabel nameLabel = new JLabel("Room name", SwingConstants.CENTER);
         nameLabel.setFont(DEFAULT_FONT);
-        final JLabel hostLabel = new JLabel("Host: " + room.host.name);
+        final JLabel hostLabel = new JLabel("Host name", SwingConstants.CENTER);
         hostLabel.setFont(DEFAULT_FONT);
-        final JLabel guestLabel = new JLabel("Guest: " + Optional.ofNullable(room.guest)
-                .map(p -> p.name).orElse("None"));
+        final JLabel guestLabel = new JLabel("Guest name", SwingConstants.CENTER);
         guestLabel.setFont(DEFAULT_FONT);
-        final JLabel sizeLabel = new JLabel("Field size: " + room.size);
+        final JLabel sizeLabel = new JLabel("Field size", SwingConstants.CENTER);
+        sizeLabel.setFont(DEFAULT_FONT);
+        final JLabel actionLabel = new JLabel("Action", SwingConstants.CENTER);
+        actionLabel.setFont(DEFAULT_FONT);
+        header.add(nameLabel);
+        header.add(hostLabel);
+        header.add(guestLabel);
+        header.add(sizeLabel);
+        header.add(actionLabel);
+        return header;
+    }
+
+    private JPanel createRoomPanel(Room room) {
+        final JPanel panel = new JPanel(new GridLayout(1, 5, 5, 0));
+        final JLabel nameLabel = new JLabel(room.name, SwingConstants.CENTER);
+        nameLabel.setFont(DEFAULT_FONT);
+        final JLabel hostLabel = new JLabel(room.host.name, SwingConstants.CENTER);
+        hostLabel.setFont(DEFAULT_FONT);
+        final JLabel guestLabel = new JLabel(Optional.ofNullable(room.guest)
+                .map(p -> p.name).orElse("-"), SwingConstants.CENTER);
+        guestLabel.setFont(DEFAULT_FONT);
+        final JLabel sizeLabel = new JLabel(Integer.toString(room.size), SwingConstants.CENTER);
         sizeLabel.setFont(DEFAULT_FONT);
         panel.add(nameLabel);
         panel.add(hostLabel);
         panel.add(guestLabel);
         panel.add(sizeLabel);
-        if (room.guest == null) {
-            final JButton join = new JButton("Join");
-            join.setFont(DEFAULT_FONT);
-            join.addActionListener(e -> {
+        final JButton action;
+        if (room.host.id == player.id) {
+            action = new JButton("Remove");
+            action.setEnabled(room.guest == null);
+            action.addActionListener(e -> {
+                try {
+                    final DeleteRoomResponse response = (DeleteRoomResponse) API.request(
+                            host, port,
+                            new DeleteRoomRequest(room.id, passwordHash));
+                    if (!response.success) {
+                        showErrorMessage("Can't remove room.");
+                    }
+                    refreshRooms();
+                } catch (IOException ignored) {
+                    connectionLost();
+                }
+            });
+        } else if (room.guest == null) {
+            action = new JButton("Join");
+            action.addActionListener(e -> {
                 try {
                     final JoinRoomResponse response = (JoinRoomResponse) API.request(
                             host, port,
@@ -85,25 +127,26 @@ public class MainFrame extends JFrame {
                         openGame(room.id);
                     } else {
                         showErrorMessage("Can't join room.");
-                        refreshRooms();
                     }
+                    refreshRooms();
                 } catch (IOException ignored) {
                     connectionLost();
                 }
             });
-            panel.add(join);
         } else {
-            final JButton join = new JButton("Observe");
-            join.setFont(DEFAULT_FONT);
-            join.addActionListener(e -> {
+            action = new JButton("Observe");
+            action.addActionListener(e -> {
                 try {
                     openGame(room.id);
                 } catch (IOException ignored) {
                     connectionLost();
                 }
             });
-            panel.add(join);
         }
+        action.setFont(DEFAULT_FONT);
+        panel.add(action);
+        final int preferredHeight = panel.getPreferredSize().height;
+        panel.setPreferredSize(new Dimension(getWidth(), preferredHeight));
         return panel;
     }
 
@@ -124,6 +167,7 @@ public class MainFrame extends JFrame {
                     host, port,
                     new GetRoomsListRequest());
             listPanel.removeAll();
+            listPanel.setLayout(new GridLayout(roomsList.rooms.size() + 1, 1, 0, 10));
             for (Room room : roomsList.rooms) {
                 listPanel.add(createRoomPanel(room));
             }

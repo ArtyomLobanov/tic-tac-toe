@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class Server {
@@ -54,11 +55,22 @@ public class Server {
                         new RegisterPlayerResponse(userId++));
             } else if (request.getRequest().getDialogType() == API.Type.GET_ROOMS) {
                 API.send(200, "OK", input,
-                        new GetRoomsListResponse(new Room[]{
+                        new GetRoomsListResponse(Arrays.asList(
                                 new Room("name", 23, new Player("pla1", 12),
-                                        null, 3, Room.Status.WAIT_GUEST, false),
+                                null, 3, Room.Status.WAIT_GUEST, false),
                                 new Room("best room ever", 235, new Player("pla1", 12),
-                                        null, 15, Room.Status.WAIT_GUEST, false)}));
+                                        null, 15, Room.Status.WAIT_GUEST, false),
+                                new Room("best room ever", 235, new Player("pla1", 12),
+                                        null, 15, Room.Status.WAIT_GUEST, false),
+                                new Room("best room ever", 235, new Player("pla1", 12),
+                                        null, 15, Room.Status.WAIT_GUEST, false),
+                                new Room("best room ever", 235, new Player("pla1", 12),
+                                        null, 15, Room.Status.WAIT_GUEST, false),
+                                new Room("best room ever", 235, new Player("pla1", 12),
+                                        null, 15, Room.Status.WAIT_GUEST, false),
+                                new Room("best room ever", 235, new Player("pla1", 12),
+                                        null, 15, Room.Status.WAIT_GUEST, false)
+                        )));
             }
             input.close();
             System.out.println("send");
