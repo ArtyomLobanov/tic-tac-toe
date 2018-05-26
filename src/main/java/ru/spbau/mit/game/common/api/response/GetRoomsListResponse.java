@@ -3,10 +3,12 @@ package ru.spbau.mit.game.common.api.response;
 import ru.spbau.mit.game.common.api.API;
 import ru.spbau.mit.game.common.api.units.Room;
 
-public class GetRoomsListResponse implements Response {
-    public final Room[] rooms;
+import java.util.List;
 
-    public GetRoomsListResponse(Room[] rooms) {
+public class GetRoomsListResponse implements Response {
+    public final List<Room> rooms;
+
+    public GetRoomsListResponse(List<Room> rooms) {
         this.rooms = rooms;
     }
 

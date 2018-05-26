@@ -4,8 +4,13 @@ import ru.spbau.mit.game.common.api.API;
 
 public class DeleteRoomRequest implements Request {
 
-    public long roomId;
-    public long password;
+    public final long roomId;
+    public final long password;
+
+    public DeleteRoomRequest(long roomId, long password) {
+        this.roomId = roomId;
+        this.password = password;
+    }
 
     @Override
     public API.Type getDialogType() {
