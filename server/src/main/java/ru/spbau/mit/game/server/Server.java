@@ -60,7 +60,8 @@ public class Server extends AbstractConnectionPool {
             case GET_ROOMS: {
                 GetRoomsListRequest getRoomsListRequest = (GetRoomsListRequest)request;
                 return new GetRoomsListResponse(roomManager.getRooms(getRoomsListRequest.startPosition,
-                        getRoomsListRequest.limit).stream().map(GameRoom::getRoomInfo).collect(Collectors.toList()));
+                        getRoomsListRequest.limit).stream().map(GameRoom::getRoomInfo).collect(Collectors.toList()),
+                        roomManager.getRoomCount());
             }
             case JOIN_ROOM: {
                 JoinRoomRequest joinRoomRequest = (JoinRoomRequest)request;
@@ -86,6 +87,7 @@ public class Server extends AbstractConnectionPool {
     public static void main(String[] args) throws IOException {
         ServerSocket socket = new ServerSocket(4567);
         System.out.println("Server started");
+        System.out.println(socket.getLocalSocketAddress());
         while (true) {
             Socket sock = socket.accept();
             INSTANCE.processConnection(sock);

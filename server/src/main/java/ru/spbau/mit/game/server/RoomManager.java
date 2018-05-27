@@ -44,6 +44,10 @@ public class RoomManager {
         return id2room.get(id);
     }
 
+    public int getRoomCount() {
+        return roomList.size();
+    }
+
     public List<GameRoom> getRooms(int startPosition, int limit) {
         List<GameRoom> result = new ArrayList<>();
         listLock.readLock().lock();
