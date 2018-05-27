@@ -17,7 +17,7 @@ import java.util.function.Supplier;
 import static ru.spbau.mit.game.client.Constants.DEFAULT_FONT;
 
 class Dialogs {
-    static Optional<GameSettings> createUser() {
+    static Optional<GameSettings> createUser(Component relativeTo) {
         final JDialog dialog = new JDialog();
 
         final JPanel content = new JPanel(new BorderLayout());
@@ -75,14 +75,14 @@ class Dialogs {
         dialog.setTitle("User creation");
         dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         dialog.pack();
-        dialog.setLocationRelativeTo(null);
+        dialog.setLocationRelativeTo(relativeTo);
         dialog.setModal(true);
         dialog.setVisible(true);
 
         return validator.getValue();
     }
 
-    static Optional<RoomSettings> createRoom() {
+    static Optional<RoomSettings> createRoom(Component relativeTo) {
         final JDialog dialog = new JDialog();
 
         final JPanel content = new JPanel(new BorderLayout());
@@ -123,7 +123,7 @@ class Dialogs {
         dialog.setTitle("Room creation");
         dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         dialog.pack();
-        dialog.setLocationRelativeTo(null);
+        dialog.setLocationRelativeTo(relativeTo);
         dialog.setModal(true);
         dialog.setVisible(true);
 
