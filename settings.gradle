@@ -1,2 +1,6 @@
 rootProject.name = 'tic-tac-toe'
+include 'commons'
+include 'client'
+include 'server'
+include 'server'
 
