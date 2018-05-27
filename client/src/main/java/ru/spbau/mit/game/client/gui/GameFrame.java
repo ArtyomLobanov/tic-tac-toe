@@ -31,10 +31,10 @@ class GameFrame extends JFrame {
     private final Game game;
     private final Consumer<Game> callback;
     private final Game.Role role;
-    private final ImagePack pack;
+    private final ImagePack.IconPack pack;
     private int fieldVersion = 0;
 
-    GameFrame(Game game, ImagePack pack, Consumer<Game> callback) {
+    GameFrame(Game game, ImagePack.IconPack pack, Consumer<Game> callback) {
         super(game.room.name + ": " + game.room.host.name + " vs " + game.room.guest.name);
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         this.game = game;

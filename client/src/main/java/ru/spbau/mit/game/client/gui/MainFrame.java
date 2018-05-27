@@ -25,10 +25,12 @@ public class MainFrame extends JFrame {
     private final Player player;
     private final long authToken;
     private final ServerAddress address;
+    private final ImagePack pack;
     private final JPanel listPanel;
 
-    private MainFrame(ServerAddress address, Player player, long authToken) {
+    private MainFrame(ImagePack pack, ServerAddress address, Player player, long authToken) {
         super("Tic-Tac-Toe game");
+        this.pack = pack;
         this.authToken = authToken;
         final Dimension monitor = Toolkit.getDefaultToolkit().getScreenSize();
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
@@ -156,8 +158,10 @@ public class MainFrame extends JFrame {
                 new GetRoomInfoRequest(roomId));
         final Room room = roomResponse.room;
         final Game game = new Game(room, player, address, authToken);
-        //todo icon sizes
-        final GameFrame frame = new GameFrame(game, ImagePack.loadDefaultPack(50), e -> {});
+        final Dimension dimension = Toolkit.getDefaultToolkit().getScreenSize();
+        final int cellSize = (int) (0.8 * Math.min(dimension.width, dimension.height) / game.room.type.fieldSize);
+        final GameFrame frame = new GameFrame(game, pack.getIconPack(Math.min(cellSize, 200)), e -> {
+        });
         frame.setVisible(true);
     }
 
@@ -170,10 +174,8 @@ public class MainFrame extends JFrame {
         try {
             final CreateRoomResponse response = (CreateRoomResponse) API.request(
                     address,
-                    //TODO choose first player
-                    new CreateRoomRequest(settings.name, settings.type, authToken, true));
-            //TODO save id
-            if (response.id <= 0) {
+                    new CreateRoomRequest(settings.name, settings.type, authToken, Math.random() > 0.5));
+            if (response.id < 0) {
                 showErrorMessage("Unable to create room!");
             }
             refreshRooms();
@@ -184,15 +186,15 @@ public class MainFrame extends JFrame {
 
     private void refreshRooms() {
         try {
-            //TODO room limits
             final GetRoomsListResponse roomsList = (GetRoomsListResponse) API.request(
                     address,
                     new GetRoomsListRequest(0, 20));
             listPanel.removeAll();
-            listPanel.setLayout(new GridLayout(roomsList.rooms.size() + 1, 1, 0, 10));
+            listPanel.setLayout(new GridLayout(roomsList.rooms.size(), 1, 0, 10));
             for (Room room : roomsList.rooms) {
                 listPanel.add(createRoomPanel(room));
             }
+            listPanel.revalidate();
         } catch (IOException ignored) {
             connectionLost();
         }
@@ -209,6 +211,13 @@ public class MainFrame extends JFrame {
     }
 
     public static void main(String[] args) throws IOException {
+        final ImagePack pack;
+        try {
+            pack = ImagePack.loadDefaultPack();
+        } catch (IOException e) {
+            System.out.println("Failed to load resources!");
+            return;
+        }
         final Optional<GameSettings> result = Dialogs.createUser();
         if (!result.isPresent()) {
             return;
@@ -218,7 +227,7 @@ public class MainFrame extends JFrame {
                 new RegisterPlayerRequest(settings.name, settings.password));
         final Player player = new Player(settings.name, response.id);
         SwingUtilities.invokeLater(() -> {
-            final MainFrame game = new MainFrame(settings.address, player, response.authToken);
+            final MainFrame game = new MainFrame(pack, settings.address, player, response.authToken);
             game.setVisible(true);
         });
     }

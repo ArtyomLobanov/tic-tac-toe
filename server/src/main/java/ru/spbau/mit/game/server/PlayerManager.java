@@ -64,7 +64,7 @@ public class PlayerManager {
         if (userId > 0) {
             authToken2Time.put(authToken, System.currentTimeMillis());
         }
-        authTokenLock.writeLock().unlock();
+        authTokenLock.readLock().unlock();
         return userId;
     }
 
