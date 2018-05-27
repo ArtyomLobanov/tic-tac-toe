@@ -78,7 +78,6 @@ class GameFrame extends JFrame {
         add(infoPanel, BorderLayout.NORTH);
         pack();
         setResizable(false);
-        setLocationRelativeTo(null);
         initField();
         updateInfo();
         this.timer.start();

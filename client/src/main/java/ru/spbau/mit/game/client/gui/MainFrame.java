@@ -162,11 +162,12 @@ public class MainFrame extends JFrame {
         final int cellSize = (int) (0.8 * Math.min(dimension.width, dimension.height) / game.room.type.fieldSize);
         final GameFrame frame = new GameFrame(game, pack.getIconPack(Math.min(cellSize, 200)), e -> {
         });
+        frame.setLocationRelativeTo(this);
         frame.setVisible(true);
     }
 
     private void createRoom() {
-        final Optional<RoomSettings> result = Dialogs.createRoom();
+        final Optional<RoomSettings> result = Dialogs.createRoom(this);
         if (!result.isPresent()) {
             return;
         }
@@ -214,11 +215,11 @@ public class MainFrame extends JFrame {
         final ImagePack pack;
         try {
             pack = ImagePack.loadDefaultPack();
-        } catch (IOException e) {
+        } catch (Exception e) {
             System.out.println("Failed to load resources!");
             return;
         }
-        final Optional<GameSettings> result = Dialogs.createUser();
+        final Optional<GameSettings> result = Dialogs.createUser(null);
         if (!result.isPresent()) {
             return;
         }
