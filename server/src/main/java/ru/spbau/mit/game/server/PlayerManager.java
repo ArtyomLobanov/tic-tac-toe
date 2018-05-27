@@ -1,6 +1,7 @@
 package ru.spbau.mit.game.server;
 
 import ru.spbau.mit.game.common.api.units.Player;
+import ru.spbau.mit.game.server.exception.BrokenAuthTokenException;
 import ru.spbau.mit.game.server.units.User;
 
 import java.util.HashMap;
@@ -63,14 +64,17 @@ public class PlayerManager {
 
     public long getUserIdByToken(long authToken) {
         if (authToken < 0) {
-            return -1;
+            throw new BrokenAuthTokenException();
         }
         authTokenLock.readLock().lock();
         long userId = authToken2UserId.getOrDefault(authToken, -1L);
-        if (userId > 0 ) {
+        if (userId > 0) {
             authToken2Time.put(authToken, System.currentTimeMillis());
         }
         authTokenLock.readLock().unlock();
+        if (userId < 0) {
+            throw new BrokenAuthTokenException();
+        }
         return userId;
     }
 

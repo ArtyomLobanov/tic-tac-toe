@@ -2,6 +2,9 @@ package ru.spbau.mit.game.server;
 
 import ru.spbau.mit.game.common.api.requests.*;
 import ru.spbau.mit.game.common.api.response.*;
+import ru.spbau.mit.game.common.api.units.Player;
+import ru.spbau.mit.game.server.exception.BrokenAuthTokenException;
+import ru.spbau.mit.game.server.exception.NotFoundException;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -76,12 +79,8 @@ public class Server extends AbstractConnectionPool {
             }
             case JOIN_ROOM: {
                 JoinRoomRequest joinRoomRequest = (JoinRoomRequest)request;
-                long userId = playerManager.getUserIdByToken(joinRoomRequest.authToken);
-                if (userId < 0) {
-                    return new JoinRoomResponse(false);
-                }
                 return new JoinRoomResponse(roomManager.joinRoom(
-                        playerManager.getPlayerById(userId),
+                        playerManager.getPlayerById(playerManager.getUserIdByToken(joinRoomRequest.authToken)),
                         joinRoomRequest.roomId));
             }
             case REGISTER_PLAYER: {
@@ -100,7 +99,7 @@ public class Server extends AbstractConnectionPool {
                         updateFieldRequest.diff, playerManager.getUserIdByToken(updateFieldRequest.authToken)));
             }
         }
-        return null;
+        throw new NotFoundException();
     }
 
     public static void main(String[] args) throws IOException {
