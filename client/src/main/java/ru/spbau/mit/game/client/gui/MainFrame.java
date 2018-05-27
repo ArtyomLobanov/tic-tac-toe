@@ -2,7 +2,6 @@ package ru.spbau.mit.game.client.gui;
 
 import ru.spbau.mit.game.client.Game;
 import ru.spbau.mit.game.client.ImagePack;
-import ru.spbau.mit.game.client.User;
 import ru.spbau.mit.game.client.gui.Dialogs.GameSettings;
 import ru.spbau.mit.game.client.gui.Dialogs.RoomSettings;
 import ru.spbau.mit.game.common.api.API;
@@ -23,19 +22,21 @@ import static ru.spbau.mit.game.client.Constants.BOLD_FONT;
 import static ru.spbau.mit.game.client.Constants.DEFAULT_FONT;
 
 public class MainFrame extends JFrame {
-    private final User user;
+    private final Player player;
+    private final long authToken;
     private final ServerAddress address;
     private final JPanel listPanel;
 
-    private MainFrame(ServerAddress address, User user) {
+    private MainFrame(ServerAddress address, Player player, long authToken) {
         super("Tic-Tac-Toe game");
+        this.authToken = authToken;
         final Dimension monitor = Toolkit.getDefaultToolkit().getScreenSize();
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
         setSize(new Dimension(monitor.width / 2, monitor.height / 2));
         setResizable(false);
         setLocationRelativeTo(null);
-        this.user = user;
+        this.player = player;
         this.address = address;
         listPanel = new JPanel();
         final JPanel wrapper = new JPanel(new BorderLayout());
@@ -48,7 +49,7 @@ public class MainFrame extends JFrame {
 
     private JPanel createFooter() {
         final JPanel footer = new JPanel(new BorderLayout());
-        final JLabel nameLabel = new JLabel("Welcome, " + user.player.name + "!", SwingConstants.CENTER);
+        final JLabel nameLabel = new JLabel("Welcome, " + player.name + "!", SwingConstants.CENTER);
         nameLabel.setFont(DEFAULT_FONT);
         final JPanel buttons = new JPanel(new GridLayout(1, 2, 5, 0));
         final JButton refresh = new JButton("Refresh");
@@ -100,13 +101,13 @@ public class MainFrame extends JFrame {
         panel.add(guestLabel);
         panel.add(sizeLabel);
         final JButton action;
-        if (room.host.id == user.player.id && room.guest == null) {
+        if (room.host.id == player.id && room.guest == null) {
             action = new JButton("Remove");
             action.addActionListener(e -> {
                 try {
                     final DeleteRoomResponse response = (DeleteRoomResponse) API.request(
                             address,
-                            new DeleteRoomRequest(room.id, user.passwordHash));
+                            new DeleteRoomRequest(room.id, authToken));
                     if (!response.success) {
                         showErrorMessage("Can't remove room.");
                     }
@@ -121,7 +122,7 @@ public class MainFrame extends JFrame {
                 try {
                     final JoinRoomResponse response = (JoinRoomResponse) API.request(
                             address,
-                            new JoinRoomRequest(room.id,user.player.id, user.passwordHash));
+                            new JoinRoomRequest(room.id, authToken));
                     if (response.success) {
                         openGame(room.id);
                     } else {
@@ -154,7 +155,7 @@ public class MainFrame extends JFrame {
                 address,
                 new GetRoomInfoRequest(roomId));
         final Room room = roomResponse.room;
-        final Game game = new Game(room, user, address);
+        final Game game = new Game(room, player, address, authToken);
         //todo icon sizes
         final GameFrame frame = new GameFrame(game, ImagePack.loadDefaultPack(50), e -> {});
         frame.setVisible(true);
@@ -169,8 +170,10 @@ public class MainFrame extends JFrame {
         try {
             final CreateRoomResponse response = (CreateRoomResponse) API.request(
                     address,
-                    new CreateRoomRequest(settings.name, settings.type, user.player, user.passwordHash));
-            if (!response.success) {
+                    //TODO choose first player
+                    new CreateRoomRequest(settings.name, settings.type, authToken, true));
+            //TODO save id
+            if (response.id <= 0) {
                 showErrorMessage("Unable to create room!");
             }
             refreshRooms();
@@ -181,9 +184,10 @@ public class MainFrame extends JFrame {
 
     private void refreshRooms() {
         try {
+            //TODO room limits
             final GetRoomsListResponse roomsList = (GetRoomsListResponse) API.request(
                     address,
-                    new GetRoomsListRequest());
+                    new GetRoomsListRequest(0, 20));
             listPanel.removeAll();
             listPanel.setLayout(new GridLayout(roomsList.rooms.size() + 1, 1, 0, 10));
             for (Room room : roomsList.rooms) {
@@ -211,11 +215,10 @@ public class MainFrame extends JFrame {
         }
         final GameSettings settings = result.get();
         final RegisterPlayerResponse response = (RegisterPlayerResponse) API.request(settings.address,
-                new RegisterPlayerRequest(settings.name, User.hash(settings.password)));
+                new RegisterPlayerRequest(settings.name, settings.password));
         final Player player = new Player(settings.name, response.id);
-        final User user = new User(player, settings.password);
         SwingUtilities.invokeLater(() -> {
-            final MainFrame game = new MainFrame(settings.address, user);
+            final MainFrame game = new MainFrame(settings.address, player, response.authToken);
             game.setVisible(true);
         });
     }

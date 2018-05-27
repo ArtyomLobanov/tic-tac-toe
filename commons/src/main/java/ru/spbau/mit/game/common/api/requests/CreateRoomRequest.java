@@ -2,20 +2,19 @@ package ru.spbau.mit.game.common.api.requests;
 
 import ru.spbau.mit.game.common.api.API;
 import ru.spbau.mit.game.common.api.units.GameType;
-import ru.spbau.mit.game.common.api.units.Player;
 
 public class CreateRoomRequest implements Request {
 
     public final String roomName;
     public final GameType type;
-    public final Player owner;
-    public final long password;
+    public final long authToken;
+    public final boolean hostStarts;
 
-    public CreateRoomRequest(String roomName, GameType type, Player owner, long password) {
+    public CreateRoomRequest(String roomName, GameType type, long authToken, boolean hostStarts) {
         this.roomName = roomName;
         this.type = type;
-        this.owner = owner;
-        this.password = password;
+        this.authToken = authToken;
+        this.hostStarts = hostStarts;
     }
 
     @Override

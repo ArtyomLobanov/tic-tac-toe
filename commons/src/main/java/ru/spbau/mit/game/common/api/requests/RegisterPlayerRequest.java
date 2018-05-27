@@ -5,9 +5,9 @@ import ru.spbau.mit.game.common.api.API;
 public class RegisterPlayerRequest implements Request {
 
     public final String name;
-    public final long password;
+    public final String password;
 
-    public RegisterPlayerRequest(String name, long password) {
+    public RegisterPlayerRequest(String name, String password) {
         this.name = name;
         this.password = password;
     }

@@ -4,13 +4,11 @@ import ru.spbau.mit.game.common.api.API;
 
 public class JoinRoomRequest implements Request {
     public final long roomId;
-    public final long playerId;
-    public final long playerPassword;
+    public final long authToken;
 
-    public JoinRoomRequest(long roomId, long playerId, long playerPassword) {
+    public JoinRoomRequest(long roomId, long authToken) {
         this.roomId = roomId;
-        this.playerId = playerId;
-        this.playerPassword = playerPassword;
+        this.authToken = authToken;
     }
 
     @Override

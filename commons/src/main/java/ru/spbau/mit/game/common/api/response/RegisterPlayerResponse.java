@@ -5,9 +5,11 @@ import ru.spbau.mit.game.common.api.API;
 public class RegisterPlayerResponse implements Response {
 
     public final long id;
+    public final long authToken;
 
-    public RegisterPlayerResponse(long id) {
+    public RegisterPlayerResponse(long id, long authToken) {
         this.id = id;
+        this.authToken = authToken;
     }
 
     @Override

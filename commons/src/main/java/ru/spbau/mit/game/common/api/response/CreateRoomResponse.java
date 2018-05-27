@@ -4,10 +4,10 @@ import ru.spbau.mit.game.common.api.API;
 
 public class CreateRoomResponse implements Response {
 
-    public final boolean success;
+    public final long id;
 
-    public CreateRoomResponse(boolean success) {
-        this.success = success;
+    public CreateRoomResponse(long id) {
+        this.id = id;
     }
 
     @Override

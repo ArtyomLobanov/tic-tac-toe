@@ -5,11 +5,11 @@ import ru.spbau.mit.game.common.api.API;
 public class DeleteRoomRequest implements Request {
 
     public final long roomId;
-    public final long password;
+    public final long authToken;
 
-    public DeleteRoomRequest(long roomId, long password) {
+    public DeleteRoomRequest(long roomId, long authToken) {
         this.roomId = roomId;
-        this.password = password;
+        this.authToken = authToken;
     }
 
     @Override

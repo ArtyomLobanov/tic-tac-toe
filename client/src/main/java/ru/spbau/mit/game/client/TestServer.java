@@ -53,7 +53,7 @@ public class TestServer {
             } else if (request.getRequest().getDialogType() == API.Type.REGISTER_PLAYER) {
                 RegisterPlayerRequest registerRequest = (RegisterPlayerRequest) request.getRequest();
                 API.send(200, "OK", input,
-                        new RegisterPlayerResponse(userId++));
+                        new RegisterPlayerResponse(userId++, userId));
             } else if (request.getRequest().getDialogType() == API.Type.GET_ROOMS) {
                 API.send(200, "OK", input,
                         new GetRoomsListResponse(Arrays.asList(

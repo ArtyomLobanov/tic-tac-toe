@@ -38,9 +38,9 @@ class GameFrame extends JFrame {
         super(game.room.name + ": " + game.room.host.name + " vs " + game.room.guest.name);
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         this.game = game;
-        if (game.room.host.id == game.user.player.id) {
+        if (game.room.host.id == game.player.id) {
             role = game.room.isHostStart ? Game.Role.X_PLAYER : Game.Role.O_PLAYER;
-        } else if (game.room.guest.id == game.user.player.id) {
+        } else if (game.room.guest.id == game.player.id) {
             role = !game.room.isHostStart ? Game.Role.X_PLAYER : Game.Role.O_PLAYER;
         } else {
             role = Game.Role.OBSERVER;
@@ -102,7 +102,7 @@ class GameFrame extends JFrame {
                     game.address,
                     new UpdateFieldRequest(
                             game.room.id,
-                            game.user.passwordHash,
+                            game.authToken,
                             new Field.Diff(i, j, role.cell)
                     ));
             if (request.success) {
