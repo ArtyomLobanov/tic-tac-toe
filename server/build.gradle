@@ -1,0 +1,18 @@
+group 'ru.spbau.mit'
+version 'v1'
+
+apply plugin: 'java'
+apply plugin: 'application'
+
+mainClassName = 'ru.spbau.mit.game.server.Server'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testCompile group: 'junit', name: 'junit', version: '4.11'
+    compile project(':commons')
+}
