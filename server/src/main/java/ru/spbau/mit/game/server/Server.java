@@ -46,16 +46,27 @@ public class Server extends AbstractConnectionPool {
             }
             case GET_FIELD: {
                 GetFieldRequest getFieldRequest = (GetFieldRequest)request;
+                GameRoom room = roomManager.getRoom(getFieldRequest.roomId);
+                if (room == null) {
+                    return new GetRoomInfoResponse(null);
+                }
                 return new GetFieldResponse(roomManager.getRoom(getFieldRequest.roomId).getField());
             }
             case GET_FIELD_PATCH: {
                 GetFieldPatchRequest getFieldPatchRequest = (GetFieldPatchRequest)request;
-                return new GetFieldPatchResponse(roomManager.getRoom(getFieldPatchRequest.roomId)
-                        .getFieldPatch(getFieldPatchRequest.startVersion));
+                GameRoom room = roomManager.getRoom(getFieldPatchRequest.roomId);
+                if (room == null) {
+                    return new GetRoomInfoResponse(null);
+                }
+                return new GetFieldPatchResponse(room.getFieldPatch(getFieldPatchRequest.startVersion));
             }
             case GET_ROOM_INFO: {
                 GetRoomInfoRequest getRoomInfoRequest = (GetRoomInfoRequest)request;
-                return new GetRoomInfoResponse(roomManager.getRoom(getRoomInfoRequest.roomId).getRoomInfo());
+                GameRoom room = roomManager.getRoom(getRoomInfoRequest.roomId);
+                if (room == null) {
+                    return new GetRoomInfoResponse(null);
+                }
+                return new GetRoomInfoResponse(room.getRoomInfo());
             }
             case GET_ROOMS: {
                 GetRoomsListRequest getRoomsListRequest = (GetRoomsListRequest)request;
@@ -65,8 +76,12 @@ public class Server extends AbstractConnectionPool {
             }
             case JOIN_ROOM: {
                 JoinRoomRequest joinRoomRequest = (JoinRoomRequest)request;
+                long userId = playerManager.getUserIdByToken(joinRoomRequest.authToken);
+                if (userId < 0) {
+                    return new JoinRoomResponse(false);
+                }
                 return new JoinRoomResponse(roomManager.joinRoom(
-                        playerManager.getPlayerById(playerManager.getUserIdByToken(joinRoomRequest.authToken)),
+                        playerManager.getPlayerById(userId),
                         joinRoomRequest.roomId));
             }
             case REGISTER_PLAYER: {
@@ -77,8 +92,12 @@ public class Server extends AbstractConnectionPool {
             }
             case UPDATE_FIELD: {
                 UpdateFieldRequest updateFieldRequest = (UpdateFieldRequest)request;
-                return new UpdateFieldResponse(roomManager.getRoom(updateFieldRequest.roomId)
-                        .processDiff(updateFieldRequest.diff, playerManager.getUserIdByToken(updateFieldRequest.authToken)));
+                GameRoom room = roomManager.getRoom(updateFieldRequest.roomId);
+                if (room == null) {
+                    return new UpdateFieldResponse(false);
+                }
+                return new UpdateFieldResponse(room.processDiff(
+                        updateFieldRequest.diff, playerManager.getUserIdByToken(updateFieldRequest.authToken)));
             }
         }
         return null;
