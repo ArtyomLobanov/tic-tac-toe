@@ -21,6 +21,7 @@ public class Server extends AbstractConnectionPool {
                 while (true) {
                     TimeUnit.MILLISECONDS.sleep(PlayerManager.SESSION_TTL);
                     playerManager.checkSessions();
+                    roomManager.refreshRoomsList();
                 }
             } catch (InterruptedException e) {
                 //TODO log
@@ -63,9 +64,9 @@ public class Server extends AbstractConnectionPool {
             }
             case JOIN_ROOM: {
                 JoinRoomRequest joinRoomRequest = (JoinRoomRequest)request;
-                return new JoinRoomResponse(roomManager.getRoom(joinRoomRequest.roomId).connectGuest(
-                        playerManager.getPlayerById(playerManager.getUserIdByToken(joinRoomRequest.authToken))
-                ));
+                return new JoinRoomResponse(roomManager.joinRoom(
+                        playerManager.getPlayerById(playerManager.getUserIdByToken(joinRoomRequest.authToken)),
+                        joinRoomRequest.roomId));
             }
             case REGISTER_PLAYER: {
                 RegisterPlayerRequest registerPlayerRequest = (RegisterPlayerRequest)request;
