@@ -2,6 +2,9 @@ group 'ru.spbau.mit'
 version 'v1'
 
 apply plugin: 'java'
+apply plugin: 'application'
+
+mainClassName = 'ru.spbau.mit.game.client.gui.MainFrame'
 
 sourceCompatibility = 1.8
 
