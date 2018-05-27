@@ -82,110 +82,65 @@ public class GameRoom {
     public boolean processDiff(Field.Diff diff, long playerId) {
         boolean success = false;
         fieldLock.writeLock().lock();
-        if (status == Room.Status.IN_PROGRESS && checkTurn(playerId == host.id, diff.cell)) {
+        if (checkTurn(playerId, diff)) {
             diffs.add(diff);
             cells[diff.row][diff.column] = diff.cell;
+            checkField(diff.row, diff.column);
             success = true;
         }
-        checkField(diff.row, diff.column);
         fieldLock.writeLock().unlock();
         return success;
     }
 
-    private boolean checkTurn(boolean hostDiff, Field.Cell cell) {
-        return ((isHostStart && ((hostDiff && diffs.size() % 2 == 0) || (!hostDiff && diffs.size() % 2 == 1))) ||
-                (!isHostStart && ((!hostDiff && diffs.size() % 2 == 0) || (hostDiff && diffs.size() % 2 == 1)))) &&
-                ((diffs.size() % 2 == 0 && cell == Field.Cell.X) || (diffs.size() % 2 != 0 && cell == Field.Cell.O));
+    private boolean checkTurn(long playerId, Field.Diff diff) {
+        final long expectedPlayer = isHostStart ^ diffs.size() % 2 == 1 ? host.id : guest.id;
+        return status == Room.Status.IN_PROGRESS
+                && playerId == expectedPlayer
+                && diff.cell != null && diff.cell.ordinal() == diffs.size() % 2
+                && cells[diff.row][diff.column] == null;
     }
 
     private void checkField(int x, int y) {
         if (diffs.size() == type.fieldSize * type.fieldSize) {
             status = Room.Status.DRAW_GAME;
+            return;
         }
-        Field.Cell target = cells[x][y];
-        boolean win = false;
-        if (x >= type.targetCount) {
-            boolean tmp = true;
-            for (int j = 1; j < type.targetCount; j++) {
-                if (cells[x - j][y] != target) {
-                    tmp = false;
-                    break;
-                }
+        for (Direction direction : Direction.values()) {
+            int total = count(x, y, direction.dx, direction.dy) + count(x, y, -direction.dx, -direction.dy) - 1;
+            if (total >= type.targetCount) {
+                status = isHostStart ^ (diffs.size() % 2 == 1) ? Room.Status.HOST_WIN : Room.Status.GUEST_WIN;
+                return;
             }
-            win = win || tmp;
-            tmp = true;
-            if (y >= type.targetCount) {
-                for (int j = 1; j < type.targetCount; j++) {
-                    if (cells[x - j][y - j] != target) {
-                        tmp = false;
-                        break;
-                    }
-                }
-            }
-            win = win || tmp;
-            tmp = true;
-            if (y <= type.fieldSize - type.targetCount) {
-                for (int j = 1; j < type.targetCount; j++) {
-                    if (cells[x - j][y + j] != target) {
-                        tmp = false;
-                        break;
-                    }
-                }
-            }
-            win = win || tmp;
         }
-        if (x <= type.fieldSize - type.targetCount) {
-            boolean tmp = true;
-            for (int j = 1; j < type.targetCount; j++) {
-                if (cells[x + j][y] != target) {
-                    tmp = false;
-                    break;
-                }
-            }
-            win = win || tmp;
-            tmp = true;
-            if (y >= type.targetCount) {
-                for (int j = 1; j < type.targetCount; j++) {
-                    if (cells[x + j][y - j] != target) {
-                        tmp = false;
-                        break;
-                    }
-                }
-            }
-            win = win || tmp;
-            tmp = true;
-            if (y <= type.fieldSize - type.targetCount) {
-                for (int j = 1; j < type.targetCount; j++) {
-                    if (cells[x + j][y + j] != target) {
-                        tmp = false;
-                        break;
-                    }
-                }
-            }
-            win = win || tmp;
+    }
+
+    private int count(int x, int y, int dx, int dy) {
+        final Field.Cell target = cells[x][y];
+        int count = 0;
+        for (int i = 0; i < type.targetCount && inRange(x, y) && cells[x][y] == target; i++) {
+            count++;
+            x += dx;
+            y += dy;
         }
-        if (y >= type.targetCount) {
-            boolean tmp = true;
-            for (int j = 1; j < type.targetCount; j++) {
-                if (cells[x][y - j] != target) {
-                    tmp = false;
-                    break;
-                }
-            }
-            win = win || tmp;
-        }
-        if (y <= type.fieldSize - type.targetCount) {
-            boolean tmp = true;
-            for (int j = 1; j < type.targetCount; j++) {
-                if (cells[x][y + j] != target) {
-                    tmp = false;
-                    break;
-                }
-            }
-            win = win || tmp;
-        }
-        if (win) {
-            status = isHostStart^(diffs.size() % 2 == 1) ? Room.Status.HOST_WIN : Room.Status.GUEST_WIN;
+        return count;
+    }
+
+    private boolean inRange(int x, int y) {
+        return 0 <= x && x < cells.length && 0 <= y && y < cells[0].length;
+    }
+
+    private enum Direction {
+        HORIZONTAL(1, 0),
+        VERTICAL(0, 1),
+        MAIN_DIAGONAL(1, 1),
+        SIDE_DIAGONAL(1, -1);
+
+        final int dx;
+        final int dy;
+
+        Direction(int dx, int dy) {
+            this.dx = dx;
+            this.dy = dy;
         }
     }
 }
