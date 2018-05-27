@@ -59,12 +59,17 @@ public class PlayerManager {
     }
 
     public long getUserIdByToken(long authToken) {
+        System.out.println("pm1");
         authTokenLock.readLock().lock();
+        System.out.println("pm2");
         long userId = authToken2UserId.getOrDefault(authToken, -1L);
+        System.out.println("pm3");
         if (userId > 0) {
             authToken2Time.put(authToken, System.currentTimeMillis());
         }
-        authTokenLock.writeLock().unlock();
+        System.out.println("pm4");
+        authTokenLock.readLock().unlock();
+        System.out.println("pm5");
         return userId;
     }
 
