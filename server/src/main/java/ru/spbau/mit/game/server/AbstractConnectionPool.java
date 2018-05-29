@@ -5,6 +5,7 @@ import ru.spbau.mit.game.common.api.HttpRequest;
 import ru.spbau.mit.game.common.api.HttpResponse;
 import ru.spbau.mit.game.common.api.requests.Request;
 import ru.spbau.mit.game.common.api.response.Response;
+import ru.spbau.mit.game.server.exception.ServerException;
 
 import java.net.Socket;
 import java.util.concurrent.ExecutorService;
@@ -16,10 +17,14 @@ public abstract class AbstractConnectionPool {
     public void processConnection(Socket socket) {
         executor.execute(() -> {
             try {
-                while (socket.isConnected()) {
-                    HttpRequest request = HttpRequest.accept(socket);
-                    Response response = processRequest(request.getRequest());
-                    API.send(200, "OK", socket, response);
+                try {
+                    while (socket.isConnected()) {
+                        HttpRequest request = HttpRequest.accept(socket);
+                        Response response = processRequest(request.getRequest());
+                        API.send(200, "OK", socket, response);
+                    }
+                } catch (ServerException e) {
+                    API.send(e.code(), e.message(), socket, null);
                 }
             } catch (Exception e) {
                 //TODO log

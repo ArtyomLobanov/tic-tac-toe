@@ -2,6 +2,9 @@ package ru.spbau.mit.game.server;
 
 import ru.spbau.mit.game.common.api.requests.*;
 import ru.spbau.mit.game.common.api.response.*;
+import ru.spbau.mit.game.common.api.units.Player;
+import ru.spbau.mit.game.server.exception.BrokenAuthTokenException;
+import ru.spbau.mit.game.server.exception.NotFoundException;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -21,6 +24,7 @@ public class Server extends AbstractConnectionPool {
                 while (true) {
                     TimeUnit.MILLISECONDS.sleep(PlayerManager.SESSION_TTL);
                     playerManager.checkSessions();
+                    roomManager.refreshRoomsList();
                 }
             } catch (InterruptedException e) {
                 //TODO log
@@ -45,27 +49,39 @@ public class Server extends AbstractConnectionPool {
             }
             case GET_FIELD: {
                 GetFieldRequest getFieldRequest = (GetFieldRequest)request;
+                GameRoom room = roomManager.getRoom(getFieldRequest.roomId);
+                if (room == null) {
+                    return new GetRoomInfoResponse(null);
+                }
                 return new GetFieldResponse(roomManager.getRoom(getFieldRequest.roomId).getField());
             }
             case GET_FIELD_PATCH: {
                 GetFieldPatchRequest getFieldPatchRequest = (GetFieldPatchRequest)request;
-                return new GetFieldPatchResponse(roomManager.getRoom(getFieldPatchRequest.roomId)
-                        .getFieldPatch(getFieldPatchRequest.startVersion));
+                GameRoom room = roomManager.getRoom(getFieldPatchRequest.roomId);
+                if (room == null) {
+                    return new GetRoomInfoResponse(null);
+                }
+                return new GetFieldPatchResponse(room.getFieldPatch(getFieldPatchRequest.startVersion));
             }
             case GET_ROOM_INFO: {
                 GetRoomInfoRequest getRoomInfoRequest = (GetRoomInfoRequest)request;
-                return new GetRoomInfoResponse(roomManager.getRoom(getRoomInfoRequest.roomId).getRoomInfo());
+                GameRoom room = roomManager.getRoom(getRoomInfoRequest.roomId);
+                if (room == null) {
+                    return new GetRoomInfoResponse(null);
+                }
+                return new GetRoomInfoResponse(room.getRoomInfo());
             }
             case GET_ROOMS: {
                 GetRoomsListRequest getRoomsListRequest = (GetRoomsListRequest)request;
                 return new GetRoomsListResponse(roomManager.getRooms(getRoomsListRequest.startPosition,
-                        getRoomsListRequest.limit).stream().map(GameRoom::getRoomInfo).collect(Collectors.toList()));
+                        getRoomsListRequest.limit).stream().map(GameRoom::getRoomInfo).collect(Collectors.toList()),
+                        roomManager.getRoomCount());
             }
             case JOIN_ROOM: {
                 JoinRoomRequest joinRoomRequest = (JoinRoomRequest)request;
-                return new JoinRoomResponse(roomManager.getRoom(joinRoomRequest.roomId).connectGuest(
-                        playerManager.getPlayerById(playerManager.getUserIdByToken(joinRoomRequest.authToken))
-                ));
+                return new JoinRoomResponse(roomManager.joinRoom(
+                        playerManager.getPlayerById(playerManager.getUserIdByToken(joinRoomRequest.authToken)),
+                        joinRoomRequest.roomId));
             }
             case REGISTER_PLAYER: {
                 RegisterPlayerRequest registerPlayerRequest = (RegisterPlayerRequest)request;
@@ -75,16 +91,21 @@ public class Server extends AbstractConnectionPool {
             }
             case UPDATE_FIELD: {
                 UpdateFieldRequest updateFieldRequest = (UpdateFieldRequest)request;
-                return new UpdateFieldResponse(roomManager.getRoom(updateFieldRequest.roomId)
-                        .processDiff(updateFieldRequest.diff, playerManager.getUserIdByToken(updateFieldRequest.authToken)));
+                GameRoom room = roomManager.getRoom(updateFieldRequest.roomId);
+                if (room == null) {
+                    return new UpdateFieldResponse(false);
+                }
+                return new UpdateFieldResponse(room.processDiff(
+                        updateFieldRequest.diff, playerManager.getUserIdByToken(updateFieldRequest.authToken)));
             }
         }
-        return null;
+        throw new NotFoundException();
     }
 
     public static void main(String[] args) throws IOException {
         ServerSocket socket = new ServerSocket(4567);
         System.out.println("Server started");
+        System.out.println(socket.getLocalSocketAddress());
         while (true) {
             Socket sock = socket.accept();
             INSTANCE.processConnection(sock);

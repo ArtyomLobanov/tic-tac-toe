@@ -1,6 +1,7 @@
 package ru.spbau.mit.game.server;
 
 import ru.spbau.mit.game.common.api.units.Player;
+import ru.spbau.mit.game.server.exception.BrokenAuthTokenException;
 import ru.spbau.mit.game.server.units.User;
 
 import java.util.HashMap;
@@ -44,7 +45,9 @@ public class PlayerManager {
         if (user != null && user.passwordHash == User.hash(userPassword)) {
             authTokenLock.readLock().lock();
             long authToken = userId2authToken.getOrDefault(userId, -1L);
-            authToken2Time.put(authToken, System.currentTimeMillis());
+            if (authToken > 0) {
+                authToken2Time.put(authToken, System.currentTimeMillis());
+            }
             authTokenLock.readLock().unlock();
             if (authToken == -1) {
                 authTokenLock.writeLock().lock();
@@ -52,6 +55,7 @@ public class PlayerManager {
                 authToken2UserId.put(authToken, userId);
                 authToken2Time.put(authToken, System.currentTimeMillis());
                 authTokenLock.writeLock().unlock();
+                System.out.println("Create token: " + authToken);
             }
             return authToken;
         }
@@ -59,12 +63,18 @@ public class PlayerManager {
     }
 
     public long getUserIdByToken(long authToken) {
+        if (authToken < 0) {
+            throw new BrokenAuthTokenException();
+        }
         authTokenLock.readLock().lock();
         long userId = authToken2UserId.getOrDefault(authToken, -1L);
         if (userId > 0) {
             authToken2Time.put(authToken, System.currentTimeMillis());
         }
         authTokenLock.readLock().unlock();
+        if (userId < 0) {
+            throw new BrokenAuthTokenException();
+        }
         return userId;
     }
 
@@ -78,9 +88,12 @@ public class PlayerManager {
         Set<Long> tokens = authToken2Time.keySet();
         for (Long token : tokens) {
             if (authToken2Time.compute(token, (tok, time) -> currentTime - time) > SESSION_TTL) {
+                System.out.println("Pending remove token: " + token);
                 authToken2Time.remove(token);
-                long userId = authToken2UserId.remove(token);
-                userId2authToken.remove(token);
+                if (authToken2UserId.containsKey(token)) {
+                    long userId = authToken2UserId.remove(token);
+                    userId2authToken.remove(userId);
+                }
             }
         }
         authTokenLock.writeLock().unlock();

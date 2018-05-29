@@ -7,9 +7,11 @@ import java.util.List;
 
 public class GetRoomsListResponse implements Response {
     public final List<Room> rooms;
+    public final int totalCount;
 
-    public GetRoomsListResponse(List<Room> rooms) {
+    public GetRoomsListResponse(List<Room> rooms, int totalCount) {
         this.rooms = rooms;
+        this.totalCount = totalCount;
     }
 
     @Override
