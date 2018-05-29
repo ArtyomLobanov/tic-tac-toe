@@ -111,6 +111,8 @@ class GameFrame extends JFrame {
             }
         } catch (IOException ignored) {
             connectionLost();
+        } catch (API.RequestException ignored) {
+            sessionFinished();
         }
     }
 
@@ -136,6 +138,8 @@ class GameFrame extends JFrame {
             }
         } catch (IOException ignored) {
             connectionLost();
+        } catch (API.RequestException ignored) {
+            sessionFinished();
         }
     }
 
@@ -147,6 +151,8 @@ class GameFrame extends JFrame {
             return response.room.status;
         } catch (IOException ignored) {
             connectionLost();
+        } catch (API.RequestException ignored) {
+            sessionFinished();
         }
         return null;
     }
@@ -169,6 +175,8 @@ class GameFrame extends JFrame {
             }
         } catch (IOException ignored) {
             connectionLost();
+        } catch (API.RequestException ignored) {
+            sessionFinished();
         }
     }
 
@@ -180,6 +188,14 @@ class GameFrame extends JFrame {
     private void connectionLost() {
         timer.stop();
         showErrorMessage("Connection lost!");
+        callback.accept(game);
+        setVisible(false);
+        dispose();
+    }
+
+    private void sessionFinished() {
+        timer.stop();
+        showErrorMessage("You weren't active for a long time, so your session was finished!");
         callback.accept(game);
         setVisible(false);
         dispose();

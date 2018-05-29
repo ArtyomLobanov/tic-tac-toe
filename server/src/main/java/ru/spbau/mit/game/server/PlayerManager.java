@@ -16,7 +16,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class PlayerManager {
     //Max AFK time
-    public final static long SESSION_TTL = TimeUnit.MINUTES.toMillis(2);
+    public final static long SESSION_TTL = TimeUnit.MINUTES.toMillis(15);
     private final static Random RANDOM_GENERATOR = new Random();
     private final static AtomicLong FREE_ID = new AtomicLong(1);
 

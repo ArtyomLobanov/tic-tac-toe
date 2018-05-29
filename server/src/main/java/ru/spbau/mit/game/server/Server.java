@@ -103,9 +103,12 @@ public class Server extends AbstractConnectionPool {
     }
 
     public static void main(String[] args) throws IOException {
-        ServerSocket socket = new ServerSocket(4567);
-        System.out.println("Server started");
-        System.out.println(socket.getLocalSocketAddress());
+        if (args.length != 1 || !args[0].matches("\\d{1,5}")) {
+            System.out.println("Arguments expected: <port>");
+            System.exit(0);
+        }
+        ServerSocket socket = new ServerSocket(Integer.parseInt(args[0]));
+        System.out.println("Server started at port " + args[0]);
         while (true) {
             Socket sock = socket.accept();
             INSTANCE.processConnection(sock);
