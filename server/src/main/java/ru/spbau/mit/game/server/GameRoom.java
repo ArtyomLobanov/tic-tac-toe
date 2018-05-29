@@ -108,7 +108,7 @@ public class GameRoom {
         for (Direction direction : Direction.values()) {
             int total = count(x, y, direction.dx, direction.dy) + count(x, y, -direction.dx, -direction.dy) - 1;
             if (total >= type.targetCount) {
-                status = isHostStart ^ (diffs.size() % 2 == 1) ? Room.Status.HOST_WIN : Room.Status.GUEST_WIN;
+                status = isHostStart ^ (diffs.size() % 2 == 0) ? Room.Status.HOST_WIN : Room.Status.GUEST_WIN;
                 return;
             }
         }

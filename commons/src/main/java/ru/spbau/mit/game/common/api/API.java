@@ -19,11 +19,14 @@ public class API {
         throw new RuntimeException("Unknown api call!");
     }
 
-    public static Response request(ServerAddress address, Request request) throws IOException {
+    public static Response request(ServerAddress address, Request request) throws IOException, RequestException {
         try (Socket socket = new Socket(address.host, address.port)) {
             final HttpRequest httpRequest = new HttpRequest(singletonMap("Host", address.host), request);
             httpRequest.send(socket);
             final HttpResponse response = HttpResponse.accept(socket, request.getDialogType());
+            if (response.getResultCode() >= 300) {
+                throw new RequestException(response.getResultDescription(), response.getResultCode());
+            }
             return response.getResponse();
         }
     }
@@ -58,6 +61,15 @@ public class API {
             this.uri = uri;
             this.requestClass = requestClass;
             this.responseClass = responseClass;
+        }
+    }
+
+    public static class RequestException extends Exception {
+        private final int code;
+
+        public RequestException(String message, int code) {
+            super(message);
+            this.code = code;
         }
     }
 }

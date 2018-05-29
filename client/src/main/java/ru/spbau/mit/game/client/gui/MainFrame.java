@@ -68,7 +68,7 @@ public class MainFrame extends JFrame {
     }
 
     private JPanel createHeader() {
-        final JPanel header = new JPanel(new GridLayout(1, 5, 5, 0));
+        final JPanel header = new JPanel(new GridLayout(1, 6, 5, 0));
         final JLabel nameLabel = new JLabel("Room name", SwingConstants.CENTER);
         nameLabel.setFont(BOLD_FONT);
         final JLabel hostLabel = new JLabel("Host name", SwingConstants.CENTER);
@@ -77,18 +77,21 @@ public class MainFrame extends JFrame {
         guestLabel.setFont(BOLD_FONT);
         final JLabel sizeLabel = new JLabel("Game type", SwingConstants.CENTER);
         sizeLabel.setFont(BOLD_FONT);
+        final JLabel statusLabel = new JLabel("Status", SwingConstants.CENTER);
+        statusLabel.setFont(BOLD_FONT);
         final JLabel actionLabel = new JLabel("Action", SwingConstants.CENTER);
         actionLabel.setFont(BOLD_FONT);
         header.add(nameLabel);
         header.add(hostLabel);
         header.add(guestLabel);
         header.add(sizeLabel);
+        header.add(statusLabel);
         header.add(actionLabel);
         return header;
     }
 
     private JPanel createRoomPanel(Room room) {
-        final JPanel panel = new JPanel(new GridLayout(1, 5, 5, 0));
+        final JPanel panel = new JPanel(new GridLayout(1, 6, 5, 0));
         final JLabel nameLabel = new JLabel(room.name, SwingConstants.CENTER);
         nameLabel.setFont(DEFAULT_FONT);
         final JLabel hostLabel = new JLabel(room.host.name, SwingConstants.CENTER);
@@ -98,26 +101,18 @@ public class MainFrame extends JFrame {
         guestLabel.setFont(DEFAULT_FONT);
         final JLabel sizeLabel = new JLabel(room.type.typeName, SwingConstants.CENTER);
         sizeLabel.setFont(DEFAULT_FONT);
+        final JLabel statusLabel = new JLabel(room.status.name(), SwingConstants.CENTER);
+        statusLabel.setFont(DEFAULT_FONT);
         panel.add(nameLabel);
         panel.add(hostLabel);
         panel.add(guestLabel);
         panel.add(sizeLabel);
+        panel.add(statusLabel);
         final JButton action;
-        if (room.host.id == player.id && room.guest == null) {
-            action = new JButton("Remove");
-            action.addActionListener(e -> {
-                try {
-                    final DeleteRoomResponse response = (DeleteRoomResponse) API.request(
-                            address,
-                            new DeleteRoomRequest(room.id, authToken));
-                    if (!response.success) {
-                        showErrorMessage("Can't remove room.");
-                    }
-                    refreshRooms();
-                } catch (IOException ignored) {
-                    connectionLost();
-                }
-            });
+        if (room.status != Room.Status.IN_PROGRESS && room.status != Room.Status.WAIT_GUEST
+                || room.host.id == player.id && room.guest == null ) {
+            action = new JButton("-");
+            action.setEnabled(false);
         } else if (room.guest == null) {
             action = new JButton("Join");
             action.addActionListener(e -> {
@@ -133,6 +128,8 @@ public class MainFrame extends JFrame {
                     refreshRooms();
                 } catch (IOException ignored) {
                     connectionLost();
+                } catch (API.RequestException ignored) {
+                    sessionFinished();
                 }
             });
         } else {
@@ -142,6 +139,8 @@ public class MainFrame extends JFrame {
                     openGame(room.id);
                 } catch (IOException ignored) {
                     connectionLost();
+                } catch (API.RequestException ignored) {
+                    sessionFinished();
                 }
             });
         }
@@ -152,7 +151,7 @@ public class MainFrame extends JFrame {
         return panel;
     }
 
-    private void openGame(long roomId) throws IOException {
+    private void openGame(long roomId) throws IOException, API.RequestException {
         final GetRoomInfoResponse roomResponse = (GetRoomInfoResponse) API.request(
                 address,
                 new GetRoomInfoRequest(roomId));
@@ -182,6 +181,8 @@ public class MainFrame extends JFrame {
             refreshRooms();
         } catch (IOException ignored) {
             connectionLost();
+        } catch (API.RequestException e) {
+            sessionFinished();
         }
     }
 
@@ -189,7 +190,7 @@ public class MainFrame extends JFrame {
         try {
             final GetRoomsListResponse roomsList = (GetRoomsListResponse) API.request(
                     address,
-                    new GetRoomsListRequest(0, 20));
+                    new GetRoomsListRequest(0, 100));
             listPanel.removeAll();
             listPanel.setLayout(new GridLayout(roomsList.rooms.size(), 1, 0, 10));
             for (Room room : roomsList.rooms) {
@@ -198,6 +199,8 @@ public class MainFrame extends JFrame {
             listPanel.revalidate();
         } catch (IOException ignored) {
             connectionLost();
+        } catch (API.RequestException e) {
+            sessionFinished();
         }
     }
 
@@ -211,7 +214,13 @@ public class MainFrame extends JFrame {
         dispose();
     }
 
-    public static void main(String[] args) throws IOException {
+    private void sessionFinished() {
+        showErrorMessage("You weren't active for a long time, so your session was finished!");
+        setVisible(false);
+        dispose();
+    }
+
+    public static void main(String[] args) throws IOException, API.RequestException {
         final ImagePack pack;
         try {
             pack = ImagePack.loadDefaultPack();

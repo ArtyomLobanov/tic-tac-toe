@@ -18,14 +18,13 @@ public abstract class AbstractConnectionPool {
         executor.execute(() -> {
             try {
                 try {
-                    while (socket.isConnected()) {
-                        HttpRequest request = HttpRequest.accept(socket);
-                        Response response = processRequest(request.getRequest());
-                        API.send(200, "OK", socket, response);
-                    }
+                    HttpRequest request = HttpRequest.accept(socket);
+                    Response response = processRequest(request.getRequest());
+                    API.send(200, "OK", socket, response);
                 } catch (ServerException e) {
                     API.send(e.code(), e.message(), socket, null);
                 }
+                socket.close();
             } catch (Exception e) {
                 //TODO log
             }
